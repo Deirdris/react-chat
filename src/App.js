@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
 import './App.css';
 
@@ -7,7 +7,7 @@ import 'firebase/firestore';
 import 'firebase/auth';
 
 import {useAuthState} from "react-firebase-hooks/auth";
-import {useCollectionData} from "react-firebase-hooks/firestore";
+import {useCollection, useCollectionData, useDocumentDataOnce} from "react-firebase-hooks/firestore";
 
 import {
     BrowserRouter as Router,
@@ -91,20 +91,72 @@ function SignOut() {
 }
 
 
+// function FriendList() {
+//     const {uid} = auth.currentUser;
+//     const query = firestore.collection("users").where(firebase.firestore.FieldPath.documentId(), "!=", uid).limit(10);
+//     const [friends] = useCollectionData(query, {idField: 'id'});
+//
+//     return (
+//         <main>
+//             {friends && friends.map(friend => <Link className="friend-link" key={friend.id} to={`/chat/${friend.id}`}>
+//                 <span className="friend-span">
+//                     <img className="main-screen-img" src={friend.photoURL}/>
+//                     {friend.displayName}
+//                 </span>
+//             </Link>)}
+//         </main>
+//     )
+// }
+
 function FriendList() {
     const {uid} = auth.currentUser;
-    const query = firestore.collection("users").where(firebase.firestore.FieldPath.documentId(), "!=", uid).limit(10);
-    const [friends] = useCollectionData(query, {idField: 'id'});
+    const chatQuery = firestore
+        .collection("chats")
+        .where(`users.${uid}`, "==", true)
+        .orderBy("lastMessage.createdAt", "desc")
+        .limit(10);
+    // const [chats] = useCollectionData(chatQuery, {idField: 'id'});
+    const [chats, setChats] = useState([]);
+    const [fetched, setFetched] = useState(false);
+
+    useEffect(() => {
+        if(!fetched){
+            chatQuery.get().then(querySnapshot => {
+                let _chats = [];
+                querySnapshot.docs.forEach(docSnapshot => _chats.push(docSnapshot.data()));
+                setChats(_chats);
+                setFetched(true);
+            });
+        }
+    }, [fetched]);
+
+    console.log(chats);
 
     return (
         <main>
-            {friends && friends.map(friend => <Link className="friend-link" key={friend.id} to={`/chat/${friend.id}`}>
+            {fetched && chats.map(chat => <FriendElement chat={chat}></FriendElement>)}
+        </main>
+    )
+}
+
+function FriendElement(props) {
+    let {chat} = props;
+
+    const friendId = Object.keys(chat.users).find(element => element !== auth.currentUser.uid);
+
+    const friendQuery = firestore.collection("users").doc(friendId);
+    const [friend] = useDocumentDataOnce(friendQuery, {idField: 'id'});
+
+    return (
+        <>
+            {friend &&
+            <Link className="friend-link" key={friend.id} to={`/chat/${friend.id}`}>
                 <span className="friend-span">
                     <img className="main-screen-img" src={friend.photoURL}/>
                     {friend.displayName}
                 </span>
-            </Link>)}
-        </main>
+            </Link>}
+        </>
     )
 }
 

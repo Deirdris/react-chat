@@ -24,11 +24,28 @@ export function ChatRoom() {
         if (text === '') {
             return;
         }
-        await chat.docs[0].ref.collection('messages').add({
+        let batch = firestore.batch();
+        let messagesRef = chat.docs[0].ref.collection("messages").doc();
+
+        let messageObject = {
             text: text,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             uid: cuid,
-        })
+        };
+
+        batch.set(messagesRef, messageObject);
+
+        batch.update(chat.docs[0].ref, {
+            lastMessage: messageObject,
+        });
+
+        await batch.commit();
+
+        // await chat.docs[0].ref.collection('messages').add({
+        //     text: text,
+        //     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        //     uid: cuid,
+        // })
 
         setFormValue('');
     }
