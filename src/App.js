@@ -112,29 +112,14 @@ function FriendList() {
     const {uid} = auth.currentUser;
     const chatQuery = firestore
         .collection("chats")
-        .where(`users.${uid}`, "==", true)
+        .where(`users`, "array-contains", uid)
         .orderBy("lastMessage.createdAt", "desc")
         .limit(10);
-    // const [chats] = useCollectionData(chatQuery, {idField: 'id'});
-    const [chats, setChats] = useState([]);
-    const [fetched, setFetched] = useState(false);
-
-    useEffect(() => {
-        if(!fetched){
-            chatQuery.get().then(querySnapshot => {
-                let _chats = [];
-                querySnapshot.docs.forEach(docSnapshot => _chats.push(docSnapshot.data()));
-                setChats(_chats);
-                setFetched(true);
-            });
-        }
-    }, [fetched]);
-
-    console.log(chats);
+    const [chats] = useCollectionData(chatQuery, {idField: 'id'});
 
     return (
         <main>
-            {fetched && chats.map(chat => <FriendElement chat={chat}></FriendElement>)}
+            {chats && chats.map(chat => <FriendElement key={chat.id} chat={chat}></FriendElement>)}
         </main>
     )
 }
@@ -142,7 +127,7 @@ function FriendList() {
 function FriendElement(props) {
     let {chat} = props;
 
-    const friendId = Object.keys(chat.users).find(element => element !== auth.currentUser.uid);
+    const friendId = chat.users.find(element => element !== auth.currentUser.uid);
 
     const friendQuery = firestore.collection("users").doc(friendId);
     const [friend] = useDocumentDataOnce(friendQuery, {idField: 'id'});

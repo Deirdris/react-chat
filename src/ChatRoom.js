@@ -9,7 +9,7 @@ export function ChatRoom() {
     let {uid} = useParams();
     const {uid: cuid} = auth.currentUser;
 
-    const chatQuery = firestore.collection("chats").where(`users.${uid}`, `==`, true).where(`users.${cuid}`, `==`, true).limit(1);
+    const chatQuery = firestore.collection("chats").where(`usersMap.${uid}`, `==`, true).where(`usersMap.${cuid}`, `==`, true).limit(1);
     const [chat] = useCollection(chatQuery, {idField: 'id'});
     const friendQuery = firestore.collection("users").doc(uid);
     const [friend] = useDocumentDataOnce(friendQuery, {idField: 'id'});
